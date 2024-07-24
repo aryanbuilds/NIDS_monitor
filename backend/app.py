@@ -4,7 +4,7 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 import os
 
-app = Flask(__name__, static_folder='../frontend/build')
+app = Flask(__name__, static_folder='../forntend')
 CORS(app)
 
 DB_FILE = 'suricata_alerts.db'
