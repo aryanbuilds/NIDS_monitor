@@ -1,16 +1,17 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 import sqlite3
 import json
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import time
 import threading
+import asyncio
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
 
 DB_PATH = 'suricata_logs.db'
 LOG_PATH = '/var/log/suricata/eve.json'  # Update this path as needed
@@ -26,9 +27,9 @@ class LogHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.src_path == LOG_PATH:
-            self.process_new_logs()
+            asyncio.run(self.process_new_logs())
 
-    def process_new_logs(self):
+    async def process_new_logs(self):
         with open(LOG_PATH, 'r') as file:
             file.seek(self.last_position)
             new_logs = file.readlines()
@@ -53,7 +54,7 @@ class LogHandler(FileSystemEventHandler):
                         log_data['fileinfo']['filename'],
                         log_data['fileinfo']['state']
                     ))
-                    socketio.emit('new_log', dict(cursor.lastrowid))
+                    await socketio.emit('new_log', dict(log_data))
             except json.JSONDecodeError:
                 print(f"Error parsing JSON: {log}")
             except sqlite3.Error as e:
@@ -98,4 +99,4 @@ def start_log_watcher():
 if __name__ == '__main__':
     log_watcher_thread = threading.Thread(target=start_log_watcher)
     log_watcher_thread.start()
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, use_reloader=False)
