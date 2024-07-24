@@ -31,40 +31,27 @@ echo -e "${GREEN}Setting up database...${NC}"
 # Backend setup
 echo -e "${GREEN}Setting up backend...${NC}"
 
-
 # Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
 
 # Install Python dependencies
-pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
 echo -e "${GREEN}Backend setup complete.${NC}"
 
 # Frontend setup
 echo -e "${GREEN}Setting up frontend...${NC}"
-cd ../frontend
+cd frontend
 
 # Install Node.js dependencies
 npm install
 
 echo -e "${GREEN}Frontend setup complete.${NC}"
 
-# Create start script
-cd ..
-cat << EOF > start.sh
-#!/bin/bash
-# Start backend
-
-source venv/bin/activate
-python app.py &
-python log_processor.py &
-
-# Start frontend
-cd ../frontend
-npm start
-EOF
-
-
-echo -e "${GREEN}Setup complete! To start the application${NC}"
+echo -e "${GREEN}Setup complete! To start the application, run the following commands:${NC}"
+echo -e "${YELLOW}Source the virtual environment: source venv/bin/activate${NC}"
+echo -e "${YELLOW}Start the backend: python backend/app.py${NC}"
+echo -e "${YELLOW}Start the log processor: python backend/update_logs.py${NC}"
+echo -e "${YELLOW}Start the frontend: cd frontend && npm start${NC}"
 echo -e "${YELLOW}Note: Make sure Suricata is running and logging to /var/log/suricata/eve.json${NC}"
