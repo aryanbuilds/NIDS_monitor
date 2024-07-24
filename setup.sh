@@ -33,7 +33,7 @@ print("Database setup complete.")
 EOL
 
 # Setup frontend
-cd ../frontend
+cd ./frontend
 npm install
 
 echo "Setup complete. Please ensure Suricata is configured to generate eve.json logs."
