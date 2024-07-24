@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate
+
 
 # Install Python dependencies
 pip install -r requirements.txt
 
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
 # Setup SQLite database
 python - << EOL
@@ -34,7 +35,7 @@ EOL
 
 # Setup frontend
 cd ../frontend
-npm install
+npm install --legacy-peer-deps
 
 echo "Setup complete. Please ensure Suricata is configured to generate eve.json logs."
 echo "Run the backend with: python app.py"
