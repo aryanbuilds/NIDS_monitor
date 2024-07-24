@@ -1,0 +1,6 @@
+watchdog
+Flask
+SQLAlchemy
+Flask-SQLAlchemy
+Flask-Cors
+requests
