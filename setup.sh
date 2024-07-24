@@ -5,7 +5,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install Python dependencies
-pip install -r requirements.txt
+pip install -r ./backend/requirements.txt
 
 
 # Setup SQLite database
@@ -33,7 +33,7 @@ print("Database setup complete.")
 EOL
 
 # Setup frontend
-cd frontend
+cd ../frontend
 npm install
 
 echo "Setup complete. Please ensure Suricata is configured to generate eve.json logs."
