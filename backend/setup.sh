@@ -1,13 +1,9 @@
 #!/bin/bash
 
-
-
 # Install Python dependencies
-pip install -r requirements.txt
-
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
+pip install -r requirements.txt
 
 # Setup SQLite database
 python - << EOL
