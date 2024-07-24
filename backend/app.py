@@ -1,63 +1,101 @@
-from flask import Flask, jsonify, send_from_directory
+from flask import Flask, jsonify
 from flask_cors import CORS
+from flask_socketio import SocketIO, emit
 import sqlite3
-from datetime import datetime, timedelta, timezone
-import os
+import json
+from watchdog.observers import Observer
+from watchdog.events import FileSystemEventHandler
+import time
+import threading
 
-app = Flask(__name__, static_folder='../forntend')
+app = Flask(__name__)
 CORS(app)
+socketio = SocketIO(app, cors_allowed_origins="*")
 
-DB_FILE = 'suricata_alerts.db'
+DB_PATH = 'suricata_logs.db'
+LOG_PATH = '/var/log/suricata/eve.json'  # Update this path as needed
 
-def get_db():
-    db = sqlite3.connect(DB_FILE)
-    db.row_factory = sqlite3.Row
-    return db
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-@app.route('/', defaults={'path': ''})
-@app.route('/<path:path>')
-def serve(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+class LogHandler(FileSystemEventHandler):
+    def __init__(self):
+        self.last_position = 0
 
-@app.route('/api/alerts')
-def get_alerts():
-    db = get_db()
-    start_time = (datetime.now(timezone.utc) - timedelta(hours=1)).isoformat()
-    alerts = db.execute(
-        'SELECT * FROM alerts WHERE timestamp > ? ORDER BY timestamp DESC LIMIT 100',
-        (start_time,)
-    ).fetchall()
-    return jsonify([dict(alert) for alert in alerts])
+    def on_modified(self, event):
+        if event.src_path == LOG_PATH:
+            self.process_new_logs()
 
-@app.route('/api/traffic')
-def get_traffic():
-    db = get_db()
-    start_time = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-    traffic = db.execute(
-        '''SELECT strftime('%Y-%m-%d %H:%M', timestamp) as time, 
-           COUNT(*) as count FROM alerts 
-           WHERE timestamp > ? 
-           GROUP BY strftime('%Y-%m-%d %H:%M', timestamp)
-           ORDER BY time''',
-        (start_time,)
-    ).fetchall()
-    return jsonify([dict(t) for t in traffic])
+    def process_new_logs(self):
+        with open(LOG_PATH, 'r') as file:
+            file.seek(self.last_position)
+            new_logs = file.readlines()
+            self.last_position = file.tell()
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        for log in new_logs:
+            try:
+                log_data = json.loads(log)
+                if log_data['event_type'] == 'fileinfo':
+                    cursor.execute('''
+                        INSERT INTO fileinfo_logs 
+                        (timestamp, src_ip, dest_ip, protocol, filename, state)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (
+                        log_data['timestamp'],
+                        log_data['src_ip'],
+                        log_data['dest_ip'],
+                        log_data['proto'],
+                        log_data['fileinfo']['filename'],
+                        log_data['fileinfo']['state']
+                    ))
+                    socketio.emit('new_log', dict(cursor.lastrowid))
+            except json.JSONDecodeError:
+                print(f"Error parsing JSON: {log}")
+            except sqlite3.Error as e:
+                print(f"Database error: {e}")
+
+        conn.commit()
+        conn.close()
+
+@app.route('/api/logs')
+def get_logs():
+    conn = get_db_connection()
+    logs = conn.execute('SELECT * FROM fileinfo_logs ORDER BY timestamp DESC LIMIT 100').fetchall()
+    conn.close()
+    return jsonify([dict(log) for log in logs])
 
 @app.route('/api/stats')
 def get_stats():
-    db = get_db()
-    start_time = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
-    stats = db.execute(
-        '''SELECT alert_category, COUNT(*) as count 
-           FROM alerts 
-           WHERE timestamp > ? 
-           GROUP BY alert_category''',
-        (start_time,)
-    ).fetchall()
+    conn = get_db_connection()
+    stats = conn.execute('''
+        SELECT 
+            COUNT(*) as total_logs,
+            COUNT(DISTINCT src_ip) as unique_sources,
+            COUNT(DISTINCT dest_ip) as unique_destinations,
+            COUNT(DISTINCT protocol) as unique_protocols
+        FROM fileinfo_logs
+    ''').fetchone()
+    conn.close()
     return jsonify(dict(stats))
 
+def start_log_watcher():
+    event_handler = LogHandler()
+    observer = Observer()
+    observer.schedule(event_handler, path=LOG_PATH, recursive=False)
+    observer.start()
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        observer.stop()
+    observer.join()
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    log_watcher_thread = threading.Thread(target=start_log_watcher)
+    log_watcher_thread.start()
+    socketio.run(app, debug=True)
