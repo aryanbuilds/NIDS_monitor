@@ -11,7 +11,8 @@ import asyncio
 
 app = Flask(__name__)
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent')
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='gevent_uwsgi')
+
 
 DB_PATH = 'suricata_logs.db'
 LOG_PATH = '/var/log/suricata/eve.json'  # Update this path as needed
