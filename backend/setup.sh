@@ -30,7 +30,7 @@ echo -e "${GREEN}Setting up database...${NC}"
 
 # Backend setup
 echo -e "${GREEN}Setting up backend...${NC}"
-cd backend
+
 
 # Create virtual environment
 python3 -m venv venv
@@ -55,7 +55,7 @@ cd ..
 cat << EOF > start.sh
 #!/bin/bash
 # Start backend
-cd backend
+
 source venv/bin/activate
 python app.py &
 python log_processor.py &
