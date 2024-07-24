@@ -35,4 +35,4 @@ npm install --legacy-peer-deps
 
 echo "Setup complete. Please ensure Suricata is configured to generate eve.json logs."
 echo "Run the backend with: python app.py"
-echo "Run the frontend with: npm start"
+echo "Run the frontend with: npm run dev"
