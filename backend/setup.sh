@@ -26,7 +26,7 @@ fi
 
 # Run database setup script
 echo -e "${GREEN}Setting up database...${NC}"
-./scripts/db_setup.sh
+./db_setup.sh
 
 # Backend setup
 echo -e "${GREEN}Setting up backend...${NC}"
@@ -65,7 +65,6 @@ cd ../frontend
 npm start
 EOF
 
-chmod +x start.sh
 
-echo -e "${GREEN}Setup complete! To start the application, run: ./start.sh${NC}"
+echo -e "${GREEN}Setup complete! To start the application${NC}"
 echo -e "${YELLOW}Note: Make sure Suricata is running and logging to /var/log/suricata/eve.json${NC}"
