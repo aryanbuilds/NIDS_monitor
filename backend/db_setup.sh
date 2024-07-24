@@ -4,7 +4,7 @@
 set -e
 
 # Database path
-DB_PATH="backend/suricata_alerts.db"
+DB_PATH="suricata_alerts.db"
 
 echo "Setting up Suricata Monitor Database..."
 
