@@ -7,7 +7,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import time
 import threading
-import asyncio
+from queue import Queue
 
 app = Flask(__name__)
 CORS(app)
@@ -15,6 +15,9 @@ socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
 DB_PATH = 'suricata_logs.db'
 LOG_PATH = '/var/log/suricata/eve.json'  # Update this path as needed
+
+# Queue for passing log data between threads
+log_queue = Queue()
 
 def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -27,41 +30,47 @@ class LogHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.src_path == LOG_PATH:
-            asyncio.run(self.process_new_logs())
+            self.process_new_logs()
 
-    async def process_new_logs(self):
+    def process_new_logs(self):
         with open(LOG_PATH, 'r') as file:
             file.seek(self.last_position)
             new_logs = file.readlines()
             self.last_position = file.tell()
 
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
         for log in new_logs:
             try:
                 log_data = json.loads(log)
                 if log_data['event_type'] == 'fileinfo':
-                    cursor.execute('''
-                        INSERT INTO fileinfo_logs 
-                        (timestamp, src_ip, dest_ip, protocol, filename, state)
-                        VALUES (?, ?, ?, ?, ?, ?)
-                    ''', (
-                        log_data['timestamp'],
-                        log_data['src_ip'],
-                        log_data['dest_ip'],
-                        log_data['proto'],
-                        log_data['fileinfo']['filename'],
-                        log_data['fileinfo']['state']
-                    ))
-                    await socketio.emit('new_log', dict(log_data))
+                    log_queue.put(log_data)
             except json.JSONDecodeError:
                 print(f"Error parsing JSON: {log}")
-            except sqlite3.Error as e:
-                print(f"Database error: {e}")
 
-        conn.commit()
-        conn.close()
+def database_worker():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    while True:
+        log_data = log_queue.get()
+        try:
+            cursor.execute('''
+                INSERT INTO fileinfo_logs 
+                (timestamp, src_ip, dest_ip, protocol, filename, state)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                log_data['timestamp'],
+                log_data['src_ip'],
+                log_data['dest_ip'],
+                log_data['proto'],
+                log_data['fileinfo']['filename'],
+                log_data['fileinfo']['state']
+            ))
+            conn.commit()
+            socketio.emit('new_log', dict(log_data))
+        except sqlite3.Error as e:
+            print(f"Database error: {e}")
+        finally:
+            log_queue.task_done()
 
 @app.route('/api/logs')
 def get_logs():
@@ -97,6 +106,14 @@ def start_log_watcher():
     observer.join()
 
 if __name__ == '__main__':
+    # Start the log watcher thread
     log_watcher_thread = threading.Thread(target=start_log_watcher)
     log_watcher_thread.start()
-    socketio.run(app, debug=True, use_reloader=False)
+
+    # Start the database worker thread
+    db_worker_thread = threading.Thread(target=database_worker)
+    db_worker_thread.daemon = True
+    db_worker_thread.start()
+
+    # Run the Flask-SocketIO app
+    socketio.run(app, debug=True, use_reloader=False, allow_unsafe_werkzeug=True)
