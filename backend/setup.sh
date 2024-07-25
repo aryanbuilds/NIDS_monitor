@@ -12,6 +12,7 @@ import sqlite3
 conn = sqlite3.connect('suricata_logs.db')
 cursor = conn.cursor()
 
+# Create or update the table schema to include additional columns
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS fileinfo_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,9 +21,19 @@ CREATE TABLE IF NOT EXISTS fileinfo_logs (
     dest_ip TEXT,
     protocol TEXT,
     filename TEXT,
-    state TEXT
+    state TEXT,
+    event_type TEXT,
+    additional_info TEXT
 )
 ''')
+
+# Alter table to add new columns if they don't exist
+cursor.execute("PRAGMA table_info(fileinfo_logs)")
+columns = [col[1] for col in cursor.fetchall()]
+if 'event_type' not in columns:
+    cursor.execute('ALTER TABLE fileinfo_logs ADD COLUMN event_type TEXT')
+if 'additional_info' not in columns:
+    cursor.execute('ALTER TABLE fileinfo_logs ADD COLUMN additional_info TEXT')
 
 conn.commit()
 conn.close()

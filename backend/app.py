@@ -41,8 +41,7 @@ class LogHandler(FileSystemEventHandler):
         for log in new_logs:
             try:
                 log_data = json.loads(log)
-                if log_data['event_type'] == 'fileinfo':
-                    log_queue.put(log_data)
+                log_queue.put(log_data)
             except json.JSONDecodeError:
                 print(f"Error parsing JSON: {log}")
 
@@ -55,15 +54,17 @@ def database_worker():
         try:
             cursor.execute('''
                 INSERT INTO fileinfo_logs 
-                (timestamp, src_ip, dest_ip, protocol, filename, state)
-                VALUES (?, ?, ?, ?, ?, ?)
+                (timestamp, src_ip, dest_ip, protocol, filename, state, event_type, additional_info)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                log_data['timestamp'],
-                log_data['src_ip'],
-                log_data['dest_ip'],
-                log_data['proto'],
-                log_data['fileinfo']['filename'],
-                log_data['fileinfo']['state']
+                log_data.get('timestamp'),
+                log_data.get('src_ip'),
+                log_data.get('dest_ip'),
+                log_data.get('proto'),
+                log_data.get('fileinfo', {}).get('filename'),
+                log_data.get('fileinfo', {}).get('state'),
+                log_data.get('event_type'),
+                json.dumps(log_data)  # Store the entire log data as a JSON string for additional info
             ))
             conn.commit()
             socketio.emit('new_log', dict(log_data))
