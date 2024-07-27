@@ -5,7 +5,7 @@ DB_PATH = 'suricata_logs.db'
 def fetch_logs():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute('SELECT * FROM fileinfo_logs LIMIT 10')
+    cursor.execute('SELECT * FROM suricata_logs LIMIT 10')
     rows = cursor.fetchall()
     conn.close()
     return rows
