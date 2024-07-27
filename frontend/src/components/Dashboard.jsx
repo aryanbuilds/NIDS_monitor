@@ -9,11 +9,11 @@ const Dashboard = () => {
   const [logs, setLogs] = useState([]);
   const [stats, setStats] = useState({
     total_logs: 0,
-    unique_sources: 0,
-    unique_destinations: 0,
-    unique_protocols: 0
+    unique_sources: [],
+    unique_destinations: [],
+    unique_protocols: []
   });
-  
+
   useEffect(() => {
     const socket = io('http://localhost:5000');
     
@@ -24,7 +24,12 @@ const Dashboard = () => {
 
       const statsResponse = await fetch('http://localhost:5000/api/stats');
       const statsData = await statsResponse.json();
-      setStats(statsData);
+      setStats({
+        ...statsData,
+        unique_sources: Array.from(new Set(logsData.map(log => log.src_ip))),
+        unique_destinations: Array.from(new Set(logsData.map(log => log.dest_ip))),
+        unique_protocols: Array.from(new Set(logsData.map(log => log.protocol))),
+      });
     };
 
     fetchInitialData();
@@ -34,9 +39,9 @@ const Dashboard = () => {
       setStats(prevStats => ({
         ...prevStats,
         total_logs: prevStats.total_logs + 1,
-        unique_sources: new Set([...prevStats.unique_sources, newLog.src_ip]).size,
-        unique_destinations: new Set([...prevStats.unique_destinations, newLog.dest_ip]).size,
-        unique_protocols: new Set([...prevStats.unique_protocols, newLog.protocol]).size
+        unique_sources: Array.from(new Set([...prevStats.unique_sources, newLog.src_ip])),
+        unique_destinations: Array.from(new Set([...prevStats.unique_destinations, newLog.dest_ip])),
+        unique_protocols: Array.from(new Set([...prevStats.unique_protocols, newLog.protocol])),
       }));
     });
 
@@ -49,9 +54,9 @@ const Dashboard = () => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Logs" value={stats.total_logs} color="blue" />
-        <StatCard title="Unique Sources" value={stats.unique_sources} color="green" />
-        <StatCard title="Unique Destinations" value={stats.unique_destinations} color="yellow" />
-        <StatCard title="Unique Protocols" value={stats.unique_protocols} color="red" />
+        <StatCard title="Unique Sources" value={stats.unique_sources.length} color="green" />
+        <StatCard title="Unique Destinations" value={stats.unique_destinations.length} color="yellow" />
+        <StatCard title="Unique Protocols" value={stats.unique_protocols.length} color="red" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
