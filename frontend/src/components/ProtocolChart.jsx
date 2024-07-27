@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
-import { Pie } from 'react-chartjs-2';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
+import React from 'react';
+import { Bar } from 'react-chartjs-2';
+import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend);
 
-function ProtocolChart({ logs }) {
-  const chartData = {
+const ProtocolChart = ({ logs }) => {
+  const protocolData = {
     labels: ['TCP', 'UDP', 'ICMP', 'Other'],
     datasets: [{
       data: [
@@ -19,11 +19,13 @@ function ProtocolChart({ logs }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-semibold text-gray-700 mb-4">Protocol Distribution</h2>
-      <Pie data={chartData} />
+    <div className="bg-white shadow-lg rounded-lg">
+      <div className="bg-purple-500 text-white font-bold py-2 px-4 rounded-t-lg">Protocol Distribution</div>
+      <div className="p-4">
+        <Bar data={protocolData} options={{responsive: true, maintainAspectRatio: false}} />
+      </div>
     </div>
   );
-}
+};
 
 export default ProtocolChart;
