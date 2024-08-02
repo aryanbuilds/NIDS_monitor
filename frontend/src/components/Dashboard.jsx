@@ -50,7 +50,7 @@ const Dashboard = () => {
 
   return (
     <div className="container mx-auto p-4 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">Suricata NIDS Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">STATS</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Logs" value={stats.total_logs} color="blue" />
