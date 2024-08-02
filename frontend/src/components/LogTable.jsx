@@ -11,6 +11,7 @@ const LogTable = ({ logs }) => (
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source IP</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destination IP</th>
             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Protocol</th>
+            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event Type</th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
@@ -19,7 +20,8 @@ const LogTable = ({ logs }) => (
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(log.timestamp).toLocaleString()}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.src_ip}</td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.dest_ip}</td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.protocol}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.proto}</td>
+              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{log.event_type}</td>
             </tr>
           ))}
         </tbody>
